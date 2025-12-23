@@ -1,49 +1,37 @@
-import Profile from "../Models/profile.js";
-import { mysqlDB } from "../Config/mysql.js";
+import Profile from "../Models/Profile.js";
+import User from "../Models/User.js";
 
-export const getUserInfo = async (req, res) => {
-  try {
-    const sql = "SELECT name, email FROM users WHERE id = ?";
-    const [rows] = await mysqlDB.execute(sql, [req.userId]);
-
-    if (rows.length === 0) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    res.status(200).json(rows[0]);
-  } catch (err) {
-    res.status(500).json({ message: "Failed to fetch user info" });
-  }
-};
 export const getProfile = async (req, res) => {
   try {
-    const profile = await Profile.findOne({ userId: req.userId });
-    res.status(200).json(profile);
-  } catch (err) {
+    const profile = await Profile.findOne({ userId: req.user.id });
+    const user = await User.findById(req.user.id).select("name email");
+
+    res.json({
+      name: user.name,
+      email: user.email,
+      age: profile?.age || "",
+      dob: profile?.dob || "",
+      contact: profile?.contact || ""
+    });
+  } catch {
     res.status(500).json({ message: "Failed to fetch profile" });
   }
 };
 
 export const updateProfile = async (req, res) => {
   try {
-    console.log("UserId from token:", req.userId);
-    console.log("Body data:", req.body);
+    const { name, email, age, dob, contact } = req.body;
 
-    const { age, dob, contact } = req.body;
+    await User.findByIdAndUpdate(req.user.id, { name, email });
 
     const profile = await Profile.findOneAndUpdate(
-      { userId: req.userId },
-      { age, dob, contact },
+      { userId: req.user.id },
+      { age, dob, contact, userId: req.user.id },
       { upsert: true, new: true }
     );
 
-    res.status(200).json({
-      message: "Profile updated successfully",
-      profile
-    });
-  } catch (err) {
-    console.error("Profile update error:", err);
+    res.json({ message: "Profile updated successfully", profile });
+  } catch {
     res.status(500).json({ message: "Failed to update profile" });
   }
 };
-

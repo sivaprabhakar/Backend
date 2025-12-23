@@ -1,28 +1,21 @@
-import express from "express";
 import dotenv from "dotenv";
-import cors from "cors";
-
-import { mysqlDB } from "./src/Config/mysql.js";
-import { connectMongo } from "./src/Config/mongo.js";
-
-import authRoutes from "./src/Routes/authRoutes.js";
-import profileRoutes from "./src/Routes/profileRoutes.js";
-
 dotenv.config();
 
-const app = express();
-const PORT = process.env.PORT || 8001;
+import express from "express";
+import cors from "cors";
+import { connectMongo } from "./src/Config/mongo.js";
+import { mysqlDB } from "./src/Config/mysql.js";
 
+const app = express();
 app.use(express.json());
 app.use(cors());
 
-await connectMongo();
-await mysqlDB.query("SELECT 1");
+connectMongo();
+
+const [rows] = await mysqlDB.query("SELECT 1");
 console.log("MySQL connected");
 
-app.use("/api/auth", authRoutes);
-app.use("/api/profile", profileRoutes);
-
+const PORT = process.env.PORT || 8001;
 app.listen(PORT, () =>
   console.log(`Server running on port ${PORT}`)
 );
